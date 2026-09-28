@@ -24,4 +24,9 @@ public class RoomRepository {
         return rooms.containsKey(id);
     }
 
+    public void deleteById(Long id)
+    {
+        rooms.remove(id);
+    }
+
 }
