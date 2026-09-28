@@ -1,12 +1,11 @@
 package com.dsu.room_api;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -25,5 +24,12 @@ public class RoomController {
     @GetMapping("/{id}")
     public Room getRoomById(@PathVariable Long id) {
         return roomRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @PostMapping
+    public ResponseEntity<Room> createRoom(@RequestBody Room room) {
+        Room newRoom = roomRepository.save(room);
+        URI location = URI.create("/api/rooms/" + newRoom.id());
+        return ResponseEntity.created(location).body(newRoom);
     }
 }
