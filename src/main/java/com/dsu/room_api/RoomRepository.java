@@ -7,10 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class RoomRepository {
     private final Map<Long, Room> rooms = new ConcurrentHashMap<>();
+    private final AtomicLong nextId = new AtomicLong(1);
+
     public List<Room> findAll() {
         return new ArrayList<>(rooms.values());
     }
@@ -27,6 +30,14 @@ public class RoomRepository {
     public void deleteById(Long id)
     {
         rooms.remove(id);
+    }
+
+    public Room save(Room room)
+    {
+        Long id = room.id() == null ? nextId.getAndIncrement() : room.id();
+        Room newRoom = new Room(id, room.name(), room.capacity());
+        rooms.put(id, newRoom);
+        return newRoom;
     }
 
 }
