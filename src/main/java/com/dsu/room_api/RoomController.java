@@ -12,6 +12,7 @@ import java.util.List;
 @RequestMapping("/api/rooms")
 public class RoomController {
     private final RoomRepository roomRepository;
+
     public RoomController(RoomRepository roomRepository) {
         this.roomRepository = roomRepository;
     }
@@ -43,11 +44,12 @@ public class RoomController {
     }
 
     @DeleteMapping("/{id}")
-        public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         if (!roomRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         roomRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
 }

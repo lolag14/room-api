@@ -1,0 +1,43 @@
+@base = http://localhost:8080/api/rooms
+
+### 1. POST request to create a room (expect 201 + Location: /api/rooms/1)
+POST {{base}}
+Content-Type: application/json
+
+{ "name": "Room A", "capacity": 10 }
+
+### 2. POST request to create room 2 (expect 201 + Location: /api/rooms/2)
+POST {{base}}
+Content-Type: application/json
+
+{ "name": "Room B", "capacity": 15 }
+
+### 3. GET request to list all rooms (expect 200, 2 rooms)
+GET {{base}}
+
+### 4. GET request to list room 1 (expect 200)
+GET {{base}}/1
+
+### 5. PUT request to update room 1 (expect 200)
+PUT {{base}}/1
+Content-Type: application/json
+
+{ "name":  "Room A updated", "capacity": 11}
+
+### 6. DELETE request to delete room 1 (expect 204)
+DELETE {{base}}/1
+
+### 7. GET request for the now deleted room 1 (expect 404)
+GET {{base}}/1
+
+### 8. GET request for a room that doesn't exist (expect 404)
+GET {{base}}/99
+
+### 9. PUT request for a room that doesn't exist (expect 404)
+PUT {{base}}/99
+Content-Type: application/json
+
+{ "name": "Non-existent room", "capacity": 5 }
+
+### 10. DELETE request for room 1 again (expect 404)
+DELETE {{base}}/1
