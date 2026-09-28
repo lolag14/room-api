@@ -32,4 +32,13 @@ public class RoomController {
         URI location = URI.create("/api/rooms/" + newRoom.id());
         return ResponseEntity.created(location).body(newRoom);
     }
+
+    @PutMapping("/{id}")
+    public Room updateRoom(@RequestBody Room room, @PathVariable Long id) {
+        if (!roomRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        Room updatedRoom = new Room(id, room.name(), room.capacity());
+        return roomRepository.save(updatedRoom);
+    }
 }
