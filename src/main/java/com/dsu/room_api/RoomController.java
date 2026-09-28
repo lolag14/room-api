@@ -41,4 +41,13 @@ public class RoomController {
         Room updatedRoom = new Room(id, room.name(), room.capacity());
         return roomRepository.save(updatedRoom);
     }
+
+    @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
+        if (!roomRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        roomRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }
