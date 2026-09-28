@@ -18,4 +18,10 @@ public class RoomRepository {
     {
         return Optional.ofNullable(rooms.get(id));
     }
+
+    public boolean existsById(Long id)
+    {
+        return rooms.containsKey(id);
+    }
+
 }
