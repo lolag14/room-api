@@ -53,3 +53,20 @@ Content-Type: application/json
 
 ### 14. DELETE request for room 4 again (expect 404)
 DELETE {{base}}/4
+
+### 15. POST request for room exceeding range of allowed capacity (expect 400)
+POST {{base}}
+Content-Type: application/json
+
+{ "name":  "A room too big", "capacity": 21 }
+
+### 16. PUT request for room exceeding range of allowed capacity (expect 400)
+PUT {{base}}/1
+Content-Type: application/json
+
+{ "name":  "A room too big", "capacity": 21 }
+
+### 17. GET request with a non number minCapacity (expect 400)
+GET {{base}}?minCapacity=abc
+
+{ "name":  "A room too big", "capacity": "many" }
