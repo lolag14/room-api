@@ -36,4 +36,13 @@ public class RoomController {
         return foundRoom.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PostMapping
+    public ResponseEntity<Room> createRoom(@RequestBody RoomCreateRequest request) {
+        Room newRoom = new Room(nextId.getAndIncrement(), request.name(), request.capacity());
+        rooms.add(newRoom);
+        return ResponseEntity
+                .created(URI.create("/api/rooms/" + newRoom.id()))
+                .body(newRoom);
+    }
+
 }
