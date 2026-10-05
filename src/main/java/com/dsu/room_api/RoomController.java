@@ -40,6 +40,7 @@ public class RoomController {
     }
 
     @Operation(summary = "Creates a room with provided data and assigns it an id")
+    @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
     @ApiResponse(responseCode = "201", description = "Room created, location header points to it")
     @PostMapping
     public ResponseEntity<Room> createRoom(@RequestBody RoomCreateRequest request) {
@@ -51,6 +52,7 @@ public class RoomController {
 
     @Operation(summary = "Updates an existing room by id with provided data")
     @ApiResponse(responseCode = "200", description = "Room updated")
+    @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @PutMapping("/{id}")
     public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {

@@ -8,6 +8,11 @@ import java.util.Optional;
 @Service
 public class RoomService {
     private final RoomRepository roomRepository;
+    private void validateCapacity(int capacity) {
+        if (capacity < 1 || capacity > 20) {
+            throw new InvalidCapacityException("Capacity must be between 1 and 20");
+        }
+    }
 
     public RoomService(RoomRepository roomRepository) {
         this.roomRepository = roomRepository;
@@ -25,10 +30,12 @@ public class RoomService {
     }
 
     public Room create(RoomCreateRequest request) {
+        validateCapacity(request.capacity());
         return roomRepository.save(new Room(null, request.name(), request.capacity()));
     }
 
     public Optional<Room> update(Long id, RoomCreateRequest request) {
+        validateCapacity(request.capacity());
         if (!roomRepository.existsById(id)) {
             return Optional.empty();
         }
