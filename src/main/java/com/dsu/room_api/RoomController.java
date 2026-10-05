@@ -45,4 +45,16 @@ public class RoomController {
                 .body(newRoom);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
+        for (int i = 0; i < rooms.size(); i++) {
+            if (id.equals(rooms.get(i).id())) {
+                Room updatedRoom = new Room(id, request.name(), request.capacity());
+                rooms.set(i, updatedRoom);
+                return ResponseEntity.ok(updatedRoom);
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
 }
