@@ -1,5 +1,8 @@
 package com.dsu.room_api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Tag(name = "Rooms", description = "Room listings")
 @RestController
 @RequestMapping("/api/rooms")
 public class RoomController {
@@ -18,6 +22,8 @@ public class RoomController {
             new Room(3L, "Rooftop Room", 12)));
     private final AtomicLong nextId = new AtomicLong(4);
 
+    @Operation(summary = "Finds all rooms with an optional minimum capacity and/or name filter")
+    @ApiResponse(responseCode = "200", description = "Rooms listed")
     @GetMapping
     public List<Room> getAllRooms(
             @RequestParam(required = false) Integer minCapacity,
@@ -29,6 +35,9 @@ public class RoomController {
                 .toList();
     }
 
+    @Operation(summary = "Finds a room by id")
+    @ApiResponse(responseCode = "200", description = "Room found")
+    @ApiResponse(responseCode = "404", description = "Room not found")
     @GetMapping("/{id}")
     public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
         Optional<Room> foundRoom;
@@ -36,6 +45,8 @@ public class RoomController {
         return foundRoom.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Creates a room with provided data and assigns it an id")
+    @ApiResponse(responseCode = "201", description = "Room created, location header points to it")
     @PostMapping
     public ResponseEntity<Room> createRoom(@RequestBody RoomCreateRequest request) {
         Room newRoom = new Room(nextId.getAndIncrement(), request.name(), request.capacity());
@@ -45,6 +56,9 @@ public class RoomController {
                 .body(newRoom);
     }
 
+    @Operation(summary = "Updates an existing room by id with provided data")
+    @ApiResponse(responseCode = "200", description = "Room updated")
+    @ApiResponse(responseCode = "404", description = "Room not found")
     @PutMapping("/{id}")
     public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
         for (int i = 0; i < rooms.size(); i++) {
@@ -57,6 +71,9 @@ public class RoomController {
         return ResponseEntity.notFound().build();
     }
 
+    @Operation(summary = "Deletes a room by id")
+    @ApiResponse(responseCode = "204", description = "Room deleted")
+    @ApiResponse(responseCode = "404", description = "Room not found")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         boolean removed = rooms.removeIf(r -> r.id().equals(id));
