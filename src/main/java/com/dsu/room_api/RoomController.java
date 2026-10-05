@@ -1,13 +1,12 @@
 package com.dsu.room_api;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
@@ -22,6 +21,13 @@ public class RoomController {
     @GetMapping
     public List<Room> getAllRooms() {
         return rooms;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
+        Optional<Room> foundRoom;
+        foundRoom = rooms.stream().filter(r -> r.id().equals(id)).findFirst();
+        return foundRoom.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }
