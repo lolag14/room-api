@@ -19,8 +19,14 @@ public class RoomController {
     private final AtomicLong nextId = new AtomicLong(4);
 
     @GetMapping
-    public List<Room> getAllRooms() {
-        return rooms;
+    public List<Room> getAllRooms(
+            @RequestParam(required = false) Integer minCapacity,
+            @RequestParam(defaultValue = "") String keyword) {
+
+        return rooms.stream()
+                .filter(r -> minCapacity == null || r.capacity() >= minCapacity)
+                .filter(r -> r.name().toLowerCase().contains(keyword.toLowerCase()))
+                .toList();
     }
 
     @GetMapping("/{id}")
