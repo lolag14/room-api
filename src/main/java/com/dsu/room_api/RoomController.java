@@ -57,4 +57,11 @@ public class RoomController {
         return ResponseEntity.notFound().build();
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
+        boolean removed = rooms.removeIf(r -> r.id().equals(id));
+        return removed ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
 }
