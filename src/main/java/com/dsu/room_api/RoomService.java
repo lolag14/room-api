@@ -20,8 +20,8 @@ public class RoomService {
 
     public List<Room> findAll(Integer minCapacity, String keyword) {
         return roomRepository.findAll().stream()
-                .filter(r -> minCapacity == null || r.capacity() >= minCapacity)
-                .filter(r -> r.name().toLowerCase().contains(keyword.toLowerCase()))
+                .filter(r -> minCapacity == null || r.getCapacity() >= minCapacity)
+                .filter(r -> r.getName().toLowerCase().contains(keyword.toLowerCase()))
                 .toList();
     }
 

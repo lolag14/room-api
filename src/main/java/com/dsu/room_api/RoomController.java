@@ -46,7 +46,7 @@ public class RoomController {
     public ResponseEntity<Room> createRoom(@RequestBody RoomCreateRequest request) {
         Room newRoom = roomService.create(request);
         return ResponseEntity
-                .created(URI.create("/api/rooms/" + newRoom.id()))
+                .created(URI.create("/api/rooms/" + newRoom.getId()))
                 .body(newRoom);
     }
 
