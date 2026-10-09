@@ -1,5 +1,6 @@
 package com.dsu.room_api;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -47,7 +48,12 @@ public class RoomService {
         if (!roomRepository.existsById(id)) {
             return false;
         }
-        roomRepository.deleteById(id);
+        try {
+            roomRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new RoomHasReservationsException("Room has reservations and cannot be deleted");
+        }
+
         return true;
     }
 }
