@@ -14,9 +14,12 @@ public class RoomService {
             throw new InvalidCapacityException("Capacity must be between 1 and 20");
         }
     }
-
     public RoomService(RoomRepository roomRepository) {
         this.roomRepository = roomRepository;
+    }
+
+    public long count() {
+        return roomRepository.count();
     }
 
     public List<Room> search(Integer minCapacity, String keyword) {

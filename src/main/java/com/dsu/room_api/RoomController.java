@@ -63,11 +63,19 @@ public class RoomController {
     @Operation(summary = "Deletes a room by id")
     @ApiResponse(responseCode = "204", description = "Room deleted")
     @ApiResponse(responseCode = "404", description = "Room not found")
+    @ApiResponse(responseCode = "409", description = "Room has reservations")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         boolean removed = roomService.delete(id);
         return removed ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    @Operation(summary = "Counts all rooms")
+    @ApiResponse(responseCode = "200", description = "Number of rooms")
+    @GetMapping("/count")
+    public long countRooms() {
+        return roomService.count();
     }
 
 }
