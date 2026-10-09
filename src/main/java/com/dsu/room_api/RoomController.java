@@ -26,7 +26,7 @@ public class RoomController {
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(defaultValue = "") String keyword) {
 
-        return roomService.findAll(minCapacity, keyword);
+        return roomService.search(minCapacity, keyword);
     }
 
     @Operation(summary = "Finds a room by id")

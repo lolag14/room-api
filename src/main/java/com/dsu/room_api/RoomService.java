@@ -19,7 +19,7 @@ public class RoomService {
         this.roomRepository = roomRepository;
     }
 
-    public List<Room> findAll(Integer minCapacity, String keyword) {
+    public List<Room> search(Integer minCapacity, String keyword) {
         if (minCapacity == null) {
             return roomRepository.findByNameContainingIgnoreCase(keyword);
         }
