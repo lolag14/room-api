@@ -1,5 +1,7 @@
 @base = http://localhost:8080/api/rooms
 
+# Run reset.sql before running these requests, the expected results are only valid on a cleanly reset database.
+
 ### 1. GET request to list all rooms (expect 200, 3 seeded rooms)
 GET {{base}}
 
@@ -69,4 +71,5 @@ Content-Type: application/json
 ### 17. GET request with a non number minCapacity (expect 400)
 GET {{base}}?minCapacity=abc
 
-{ "name":  "A room too big", "capacity": "many" }
+### 18. DELETE request for a room that has reservations (expect 409)
+DELETE {{base}}/1
