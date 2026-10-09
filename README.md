@@ -1,63 +1,121 @@
 # Room API
 
-The REST API application is for creating, deleting, reading and updating room entries. The list can be filtered by minCapacity (returns rooms with at least that capacity) and/or by keyword (matching full or part of the room name, case is ignored).
+The REST API application is for creating, deleting, reading and updating room entries. The list can be filtered by
+minCapacity (returns rooms with at least that capacity) and/or by keyword (matching all or part of the room name,
+ignoring case).
 
 ## REST API
-| Method | Path | Status | Description |
-|--------|------|--------|-------------|
-| GET    | /api/rooms | 200, or 400 if minCapacity isn't a number | Finds all rooms |
-| GET    | /api/rooms/{id} | 200, or 404 if missing | Finds a specific room |
-| POST    | /api/rooms | 201, or 400 if capacity is not between 1 and 20 | Creates a new room with a generated id and returns a Location header pointing to it |
-| PUT    | /api/rooms/{id} | 200, or 400 if capacity is not between 1 and 20, or 404 if missing | Updates an existing room with new data |
-| DELETE    | /api/rooms/{id} | 204, or 404 if missing | Deletes a room based on the supplied id |
 
-A room has an id, a name and a capacity. The capacity must be between 1 and 20. POST or PUT request bodies contain only a name and a capacity because the server assigns the id.  
+| Method | Path             | Status                                                             | Description                                                                         |
+|--------|------------------|--------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| GET    | /api/rooms/count | 200                                                                | Returns the number of rooms (runs `select count(*)`)                                |
+| GET    | /api/rooms       | 200, or 400 if minCapacity isn't a number                          | Finds all rooms                                                                     |
+| GET    | /api/rooms/{id}  | 200, or 404 if missing                                             | Finds a specific room                                                               |
+| POST   | /api/rooms       | 201, or 400 if capacity is not between 1 and 20                    | Creates a new room with a generated id and returns a Location header pointing to it |
+| PUT    | /api/rooms/{id}  | 200, or 400 if capacity is not between 1 and 20, or 404 if missing | Updates an existing room with new data                                              |
+| DELETE | /api/rooms/{id}  | 204, or 404 if missing, or 409 if the room has reservations        | Deletes a room based on the supplied id                                             |
+
+A room has an id, a name and a capacity. The capacity must be between 1 and 20. POST or PUT request bodies contain only
+a name and a capacity because the server assigns the id.  
 The API starts with these three rooms:
 
-| ID | Name | Capacity |
-|----|------|----------|
-| 1 | Seminar A | 8 |
-| 2 | Study Pod | 4 |
-| 3 | Rooftop Room | 12 |
+| ID | Name         | Capacity |
+|----|--------------|----------|
+| 1  | Seminar A    | 8        |
+| 2  | Study Pod    | 4        |
+| 3  | Rooftop Room | 12       |
 
-## Database
+## 409 Conflict
 
-The project uses an H2 database that runs in memory in MySQL mode. `schema.sql` creates the tables and `data.sql` inserts the data. Both run on startup. The question queries are in `queries.sql` at the repository root.
+The service layer catches the database's foreign-key error and throws `RoomHasReservationsException` (mapped to 409).
+It is the right layer because the repository should not know about HTTP and the controller should not know about SQL
+errors.
+
+## PUT SQL (api.http request 8)
+
+```sql
+Hibernate:
+select
+    count(*)
+from
+    room r1_0
+where
+    r1_0.id=?
+    Hibernate:
+select
+    r1_0.id,
+    r1_0.capacity,
+    r1_0.name
+from
+    room r1_0
+where
+    r1_0.id=?
+    Hibernate:
+update
+    room
+set
+    capacity=?,
+    name=?
+where
+    id=?
+```
+
+PUT checks whether the room exists (`count(*)`), loads it (`select`) and then updates it (`update`).
+
+## Database setup
+
+The project uses a MySQL database called roomdb. The app connects as user `roomapp` with password `roomapp1234` (set in
+`application.properties`).
+
+MySQL must be installed and running to use this API.
+Log in to MySQL as root, in Workbench or the command-line client, and run these three statements:
+
+```sql
+CREATE DATABASE roomdb;
+CREATE USER 'roomapp'@'localhost' IDENTIFIED BY 'roomapp1234';
+GRANT ALL PRIVILEGES ON roomdb.* TO 'roomapp'@'localhost';
+```
+
+Then run `reset.sql` from the repository root:  
+Command line: `mysql -u roomapp -p roomdb < reset.sql`  
+Workbench: open the file and run it.
 
 ### Tables
 
 **room**
 
-| Column | Type | Rules |
-|--------|------|-------|
-| id | BIGINT | Primary key, generated by the database |
-| name | VARCHAR(100) | Required |
-| capacity | INT | Required, must be between 1 and 20 |
+| Column   | Type         | Rules                                  |
+|----------|--------------|----------------------------------------|
+| id       | BIGINT       | Primary key, generated by the database |
+| name     | VARCHAR(100) | Required                               |
+| capacity | INT          | Required, must be between 1 and 20     |
 
 **reservation**
 
-| Column | Type | Rules |
-|--------|------|-------|
-| id | BIGINT | Primary key, generated by the database |
-| room_id | BIGINT | Required, foreign key to room.id |
-| reserved_by | VARCHAR(50) | Required |
-| start_time | DATETIME | Required |
-| end_time | DATETIME | Required |
+| Column      | Type        | Rules                                  |
+|-------------|-------------|----------------------------------------|
+| id          | BIGINT      | Primary key, generated by the database |
+| room_id     | BIGINT      | Required, foreign key to room.id       |
+| reserved_by | VARCHAR(50) | Required                               |
+| start_time  | DATETIME    | Required                               |
+| end_time    | DATETIME    | Required                               |
 
-The API only stores data in an in-memory list and is not connected to H2 yet. On restart, changes to both are lost.
+The API reads and stores data in MySQL, so it survives a restart.
 
 ### Relationship
 
-A room can have 0 to N reservations. The foreign key is `room_id` and sits on `reservation`, because a room can have many reservations, while a reservation has only one room. The room table does not hold a list of reservations, because a list in a single column cannot be joined, checked, or deleted one reservation at a time.
+A room can have 0 to N reservations. The foreign key is `room_id` and sits on `reservation` because a room can have
+many reservations, while a reservation has only one room. The room table does not hold a list of reservations because a
+list in a single column cannot be joined, checked or deleted one reservation at a time.
 
 ## Running the project
 
 The API is built on JDK 21. To start it, run RoomApiApplication in IntelliJ or `./gradlew bootRun`.  
 The application starts on http://localhost:8080  
-To use the H2 console, open http://localhost:8080/h2-console, enter JDBC URL `jdbc:h2:mem:roomdb` and username `sa`, leave the password field empty, and click Connect.
+api.http requests' expected results will only hold true on fresh data, so reset before testing. You reset the values by running reset.sql
 
 Documentation:
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - Raw OpenAPI JSON: http://localhost:8080/v3/api-docs
 
-AI use: I used a roadmap list made by Claude while working on the assignment, and when I got stuck I asked Claude to explain how and why to complete the step.
+AI use: When I got stuck, I asked Claude to explain how and why to proceed.
