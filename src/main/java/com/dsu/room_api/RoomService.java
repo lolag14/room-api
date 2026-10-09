@@ -19,10 +19,11 @@ public class RoomService {
     }
 
     public List<Room> findAll(Integer minCapacity, String keyword) {
-        return roomRepository.findAll().stream()
-                .filter(r -> minCapacity == null || r.getCapacity() >= minCapacity)
-                .filter(r -> r.getName().toLowerCase().contains(keyword.toLowerCase()))
-                .toList();
+        if (minCapacity == null) {
+            return roomRepository.findByNameContainingIgnoreCase(keyword);
+        }
+        return roomRepository.findByCapacityGreaterThanEqualAndNameContainingIgnoreCase(minCapacity, keyword);
+
     }
 
     public Optional<Room> findById(Long id) {
