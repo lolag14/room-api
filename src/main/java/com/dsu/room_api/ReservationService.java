@@ -24,6 +24,10 @@ public class ReservationService {
         return Optional.of(reservationRepository.findByRoomIdOrderByStartTime(roomId));
     }
 
+    public List<Reservation> findByReservedBy(String reservedBy) {
+        return reservationRepository.findByReservedByOrderByStartTime(reservedBy);
+    }
+
     @Transactional
     public Optional<Reservation> create(Long roomId, String reservedBy,
                                         LocalDateTime startTime, LocalDateTime endTime) {
