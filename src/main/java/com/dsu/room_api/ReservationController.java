@@ -15,6 +15,13 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
+    @GetMapping("/reservations")
+    public List<ReservationResponse> search(@RequestParam String reservedBy) {
+        return reservationService.findByReservedBy(reservedBy).stream()
+                .map(ReservationResponse::from)
+                .toList();
+    }
+
     @GetMapping("/rooms/{roomId}/reservations")
     public ResponseEntity<List<ReservationResponse>>
     listForRoom(@PathVariable Long roomId) {
