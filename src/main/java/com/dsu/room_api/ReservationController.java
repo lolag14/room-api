@@ -1,11 +1,9 @@
 package com.dsu.room_api;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -25,5 +23,21 @@ public class ReservationController {
                         .map(ReservationResponse::from).toList()))
                 .orElseGet(() ->
                         ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/rooms/{roomId}/reservations")
+    public ResponseEntity<ReservationResponse> create(
+            @PathVariable Long roomId,
+            @RequestBody ReservationCreateRequest request) {
+        try {
+            return reservationService.create(roomId, request.reservedBy(),
+                            request.startTime(), request.endTime())
+                    .map(r -> ResponseEntity
+                            .created(URI.create("/api/reservations/" + r.getId()))
+                            .body(ReservationResponse.from(r)))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
