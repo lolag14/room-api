@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface ReservationRepository  extends JpaRepository<Reservation, Long> {
     List<Reservation> findByRoomIdOrderByStartTime(Long roomId);
+    List<Reservation> findByReservedByOrderByStartTime(String reservedBy);
     boolean existsByRoomId(Long roomId);
 }
