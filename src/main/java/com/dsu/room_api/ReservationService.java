@@ -25,7 +25,7 @@ public class ReservationService {
     }
 
     public List<Reservation> findByReservedBy(String reservedBy) {
-        return reservationRepository.findByReservedByOrderByStartTime(reservedBy);
+        return reservationRepository.findByReservedByWithRoom(reservedBy);
     }
 
     @Transactional
