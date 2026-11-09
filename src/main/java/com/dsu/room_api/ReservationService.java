@@ -38,6 +38,11 @@ public class ReservationService {
             return Optional.empty();                       // 404
         }
 
+        if (reservationRepository.countOverlapping(roomId, startTime, endTime) > 0) {
+            throw new ConflictException(
+                    "room " + roomId + " is already booked at that time");   // 409
+        }
+
         return Optional.of(reservationRepository.save(
                 new Reservation(room.get(), reservedBy, startTime, endTime)));
     }

@@ -1,5 +1,6 @@
 package com.dsu.room_api;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +46,8 @@ public class ReservationController {
                     .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
 }
