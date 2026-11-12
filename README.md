@@ -20,6 +20,10 @@ ignoring case).
 | GET    | /api/reservations/{id}              | 200, or 404 if missing                                                                                                  | Finds a specific reservation                                                        |
 | DELETE | /api/reservations/{id}              | 204, or 404 if missing                                                                                                  | Cancels a reservation                                                               |
 
+Reservation endpoints return a `ReservationResponse` (id, roomId, roomName, reservedBy, startTime, endTime), never the
+`Reservation` entity. A booking request body contains only reservedBy, startTime and endTime, because the room comes
+from the path.
+
 A room has an id, a name and a capacity. The capacity must be between 1 and 20. POST or PUT request bodies contain only
 a name and a capacity because the server assigns the id.  
 The API starts with these three rooms:
@@ -32,27 +36,46 @@ The API starts with these three rooms:
 
 ## 409 Conflict
 
-The service layer catches the database's foreign-key error and throws `RoomHasReservationsException` (mapped to 409).
-It is the right layer because the repository should not know about HTTP and the controller should not know about SQL
-errors.
+There are two 409 cases, and each is decided in a different place.
+
+**Deleting a room that has reservations.** The service layer catches the database's foreign-key error and throws
+`RoomHasReservationsException` (mapped to 409). The database is the judge here, because the foreign key already enforces
+the rule. The service is the right layer because the repository should not know about HTTP and the controller should not
+know about SQL errors.
+
+**Booking a room at a time that is taken.** `ReservationService.create` counts the reservations of that room that overlap
+the requested time. If the count is above 0 it throws `ConflictException`, and `ReservationController` turns that into
+409. The service checks first here because the rule is about the data, not a constraint the foreign key can express.
+
+The service checks in this order: 400 for a bad request, then 404 for a missing room, then 409 for an overlap.
 
 ## PUT SQL (api.http request 8)
 
-```sql
+```text
 Hibernate:
-select count(*)
-from room r1_0
-where r1_0.id = ? Hibernate:
-select r1_0.id,
-       r1_0.capacity,
-       r1_0.name
-from room r1_0
-where r1_0.id = ? Hibernate:
+select
+    count(*)
+from
+    room r1_0
+where
+    r1_0.id=?
+Hibernate:
+select
+    r1_0.id,
+    r1_0.capacity,
+    r1_0.name
+from
+    room r1_0
+where
+    r1_0.id=?
+Hibernate:
 update
     room
-set capacity=?,
+set
+    capacity=?,
     name=?
-where id = ?
+where
+    id=?
 ```
 
 PUT checks whether the room exists (`count(*)`), loads it (`select`) and then updates it (`update`).
@@ -101,7 +124,7 @@ The API reads and stores data in MySQL, so it survives a restart.
 
 A room can have 0 to N reservations. The foreign key is `room_id` and sits on `reservation` because a room can have
 many reservations, while a reservation has only one room. The room table does not hold a list of reservations because a
-list in a single column cannot be joined, checked or deleted one reservation at a time. In Java, `Reservation` has a 
+list in a single column cannot be joined, checked or deleted one reservation at a time. In Java, `Reservation` has a
 `@ManyToOne` field `room` (lazy, joined on `room_id`). `Room` has no list of reservations,
 because "the reservations of room 1" is one query method and a two-way link would need both sides kept in step and
 could produce endless JSON.
