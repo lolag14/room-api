@@ -28,6 +28,10 @@ public class ReservationService {
         return reservationRepository.findByReservedByWithRoom(reservedBy);
     }
 
+    public Optional<Reservation> findById(Long id) {
+        return reservationRepository.findById(id);
+    }
+
     @Transactional
     public Optional<Reservation> create(Long roomId, String reservedBy,
                                         LocalDateTime startTime, LocalDateTime endTime) {

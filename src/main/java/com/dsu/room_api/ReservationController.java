@@ -50,4 +50,11 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
+
+    @GetMapping("/reservations/{id}")
+    public ResponseEntity<ReservationResponse> getById(@PathVariable Long id) {
+        return reservationService.findById(id)
+                .map(r -> ResponseEntity.ok(ReservationResponse.from(r)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
