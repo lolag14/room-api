@@ -14,12 +14,6 @@ public class RoomService {
         this.roomRepository = roomRepository;
     }
 
-    private void validateCapacity(int capacity) {
-        if (capacity < 1 || capacity > 20) {
-            throw new InvalidCapacityException("Capacity must be between 1 and 20");
-        }
-    }
-
     public long count() {
         return roomRepository.count();
     }
@@ -37,13 +31,11 @@ public class RoomService {
     }
 
     public Room create(RoomCreateRequest request) {
-        validateCapacity(request.capacity());
         return roomRepository.save(new Room(null, request.name(), request.capacity()));
     }
 
     @Transactional
     public Room update(Long id, String name, int capacity) {
-        validateCapacity(capacity);
         Room room = get(id);              // managed
         room.update(name, capacity);      // changed in memory
         return room;                      // UPDATE at commit

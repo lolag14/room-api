@@ -3,6 +3,7 @@ package com.dsu.room_api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,10 +41,10 @@ public class RoomController {
     }
 
     @Operation(summary = "Creates a room with provided data and assigns it an id")
-    @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
+    @ApiResponse(responseCode = "400", description = "Invalid fields, see fieldErrors")
     @ApiResponse(responseCode = "201", description = "Room created, location header points to it")
     @PostMapping
-    public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> createRoom(@Valid @RequestBody RoomCreateRequest request) {
         Room newRoom = roomService.create(request);
         return ResponseEntity
                 .created(URI.create("/api/rooms/" + newRoom.getId()))
@@ -52,10 +53,10 @@ public class RoomController {
 
     @Operation(summary = "Updates an existing room by id with provided data")
     @ApiResponse(responseCode = "200", description = "Room updated")
-    @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
+    @ApiResponse(responseCode = "400", description = "Invalid fields, see fieldErrors")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @PutMapping("/{id}")
-    public RoomResponse updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
+    public RoomResponse updateRoom(@PathVariable Long id, @Valid @RequestBody RoomCreateRequest request) {
         return RoomResponse.from(
                 roomService.update(id, request.name(), request.capacity()));
     }

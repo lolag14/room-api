@@ -71,3 +71,21 @@ DELETE http://localhost:8080/api/reservations/6
 
 ### 31. GET reservation 6 after delete (expect 404)
 GET http://localhost:8080/api/reservations/6
+
+### 32. PUT room 2, same values (expect 200, console: one select, no update)
+PUT http://localhost:8080/api/rooms/2
+Content-Type: application/json
+
+{ "name": "Study Pod", "capacity": 4 }
+
+### 33. PUT room 2, new values (expect 200, console: select + update)
+PUT http://localhost:8080/api/rooms/2
+Content-Type: application/json
+
+{ "name": "Study Pod XL", "capacity": 6 }
+
+### 34. GET room 99 (expect 404, ApiError body: room 99 not found)
+GET http://localhost:8080/api/rooms/99
+
+### 35. DELETE room 1 (expect 409, ApiError body: room 1 has reservations)
+DELETE http://localhost:8080/api/rooms/1
