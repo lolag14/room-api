@@ -3,6 +3,7 @@ package com.dsu.room_api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,10 +35,8 @@ public class RoomController {
     @ApiResponse(responseCode = "200", description = "Room found")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @GetMapping("/{id}")
-    public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long id) {
-        return roomService.findById(id)
-                .map(r -> ResponseEntity.ok(RoomResponse.from(r)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public RoomResponse getRoomById(@PathVariable Long id) {
+        return RoomResponse.from(roomService.get(id));
     }
 
     @Operation(summary = "Creates a room with provided data and assigns it an id")
@@ -56,10 +55,9 @@ public class RoomController {
     @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @PutMapping("/{id}")
-    public ResponseEntity<RoomResponse> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
-        return roomService.update(id, request)
-                .map(r -> ResponseEntity.ok(RoomResponse.from(r)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public RoomResponse updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
+        return RoomResponse.from(
+                roomService.update(id, request.name(), request.capacity()));
     }
 
     @Operation(summary = "Deletes a room by id")
@@ -67,10 +65,9 @@ public class RoomController {
     @ApiResponse(responseCode = "404", description = "Room not found")
     @ApiResponse(responseCode = "409", description = "Room has reservations")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
-        boolean removed = roomService.delete(id);
-        return removed ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRoom(@PathVariable Long id) {
+        roomService.delete(id);
     }
 
     @Operation(summary = "Counts all rooms")

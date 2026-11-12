@@ -2,20 +2,22 @@ package com.dsu.room_api;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class RoomService {
     private final RoomRepository roomRepository;
+
+    public RoomService(RoomRepository roomRepository) {
+        this.roomRepository = roomRepository;
+    }
+
     private void validateCapacity(int capacity) {
         if (capacity < 1 || capacity > 20) {
             throw new InvalidCapacityException("Capacity must be between 1 and 20");
         }
-    }
-    public RoomService(RoomRepository roomRepository) {
-        this.roomRepository = roomRepository;
     }
 
     public long count() {
@@ -27,11 +29,11 @@ public class RoomService {
             return roomRepository.findByNameContainingIgnoreCase(keyword);
         }
         return roomRepository.findByCapacityGreaterThanEqualAndNameContainingIgnoreCase(minCapacity, keyword);
-
     }
 
-    public Optional<Room> findById(Long id) {
-        return roomRepository.findById(id);
+    public Room get(Long id) {
+        return roomRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("room " + id + " not found"));
     }
 
     public Room create(RoomCreateRequest request) {
@@ -39,24 +41,22 @@ public class RoomService {
         return roomRepository.save(new Room(null, request.name(), request.capacity()));
     }
 
-    public Optional<Room> update(Long id, RoomCreateRequest request) {
-        validateCapacity(request.capacity());
-        if (!roomRepository.existsById(id)) {
-            return Optional.empty();
-        }
-        return Optional.of(roomRepository.save(new Room(id, request.name(), request.capacity())));
+    @Transactional
+    public Room update(Long id, String name, int capacity) {
+        validateCapacity(capacity);
+        Room room = get(id);              // managed
+        room.update(name, capacity);      // changed in memory
+        return room;                      // UPDATE at commit
     }
 
-    public boolean delete(Long id) {
+    public void delete(Long id) {
         if (!roomRepository.existsById(id)) {
-            return false;
+            throw new NotFoundException("room " + id + " not found");
         }
         try {
             roomRepository.deleteById(id);
         } catch (DataIntegrityViolationException e) {
-            throw new RoomHasReservationsException("Room has reservations and cannot be deleted");
+            throw new ConflictException("room " + id + " has reservations");
         }
-
-        return true;
     }
 }

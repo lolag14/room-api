@@ -21,4 +21,8 @@ public class Room {
     public Long getId() { return id; }
     public String getName() { return name; }
     public int getCapacity() { return capacity; }
+    public void update(String name, int capacity) {
+        this.name = name;
+        this.capacity = capacity;
+    }
 }
