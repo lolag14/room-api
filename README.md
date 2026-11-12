@@ -6,14 +6,19 @@ ignoring case).
 
 ## REST API
 
-| Method | Path             | Status                                                             | Description                                                                         |
-|--------|------------------|--------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| GET    | /api/rooms/count | 200                                                                | Returns the number of rooms (runs `select count(*)`)                                |
-| GET    | /api/rooms       | 200, or 400 if minCapacity isn't a number                          | Finds all rooms                                                                     |
-| GET    | /api/rooms/{id}  | 200, or 404 if missing                                             | Finds a specific room                                                               |
-| POST   | /api/rooms       | 201, or 400 if capacity is not between 1 and 20                    | Creates a new room with a generated id and returns a Location header pointing to it |
-| PUT    | /api/rooms/{id}  | 200, or 400 if capacity is not between 1 and 20, or 404 if missing | Updates an existing room with new data                                              |
-| DELETE | /api/rooms/{id}  | 204, or 404 if missing, or 409 if the room has reservations        | Deletes a room based on the supplied id                                             |
+| Method | Path                                | Status                                                                                                                  | Description                                                                         |
+|--------|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| GET    | /api/rooms/count                    | 200                                                                                                                     | Returns the number of rooms (runs `select count(*)`)                                |
+| GET    | /api/rooms                          | 200, or 400 if minCapacity isn't a number                                                                               | Finds all rooms                                                                     |
+| GET    | /api/rooms/{id}                     | 200, or 404 if missing                                                                                                  | Finds a specific room                                                               |
+| POST   | /api/rooms                          | 201, or 400 if capacity is not between 1 and 20                                                                         | Creates a new room with a generated id and returns a Location header pointing to it |
+| PUT    | /api/rooms/{id}                     | 200, or 400 if capacity is not between 1 and 20, or 404 if missing                                                      | Updates an existing room with new data                                              |
+| DELETE | /api/rooms/{id}                     | 204, or 404 if missing, or 409 if the room has reservations                                                             | Deletes a room based on the supplied id                                             |
+| GET    | /api/rooms/{roomId}/reservations    | 200, or 404 if the room is missing                                                                                      | Lists the reservations of one room, ordered by start time                           |
+| POST   | /api/rooms/{roomId}/reservations    | 201, or 400 if the request is invalid, or 404 if the room is missing, or 409 if the room is already booked at that time | Books a room and returns a Location header pointing to the reservation              |
+| GET    | /api/reservations?reservedBy={name} | 200                                                                                                                     | Lists the reservations of one person, with a single `join fetch` query              |
+| GET    | /api/reservations/{id}              | 200, or 404 if missing                                                                                                  | Finds a specific reservation                                                        |
+| DELETE | /api/reservations/{id}              | 204, or 404 if missing                                                                                                  | Cancels a reservation                                                               |
 
 A room has an id, a name and a capacity. The capacity must be between 1 and 20. POST or PUT request bodies contain only
 a name and a capacity because the server assigns the id.  
@@ -35,29 +40,19 @@ errors.
 
 ```sql
 Hibernate:
-select
-    count(*)
-from
-    room r1_0
-where
-    r1_0.id=?
-    Hibernate:
-select
-    r1_0.id,
-    r1_0.capacity,
-    r1_0.name
-from
-    room r1_0
-where
-    r1_0.id=?
-    Hibernate:
+select count(*)
+from room r1_0
+where r1_0.id = ? Hibernate:
+select r1_0.id,
+       r1_0.capacity,
+       r1_0.name
+from room r1_0
+where r1_0.id = ? Hibernate:
 update
     room
-set
-    capacity=?,
+set capacity=?,
     name=?
-where
-    id=?
+where id = ?
 ```
 
 PUT checks whether the room exists (`count(*)`), loads it (`select`) and then updates it (`update`).
@@ -106,15 +101,28 @@ The API reads and stores data in MySQL, so it survives a restart.
 
 A room can have 0 to N reservations. The foreign key is `room_id` and sits on `reservation` because a room can have
 many reservations, while a reservation has only one room. The room table does not hold a list of reservations because a
-list in a single column cannot be joined, checked or deleted one reservation at a time.
+list in a single column cannot be joined, checked or deleted one reservation at a time. In Java, `Reservation` has a 
+`@ManyToOne` field `room` (lazy, joined on `room_id`). `Room` has no list of reservations,
+because "the reservations of room 1" is one query method and a two-way link would need both sides kept in step and
+could produce endless JSON.
+
+## Overlap rule
+
+Two reservations of one room overlap when `new.start < old.end AND new.end > old.start`. It is implemented as a JPQL
+`count` query (`ReservationRepository.countOverlapping`).
+
+Request 19 succeeds because the comparisons are strict (`<` and `>`): a booking from 11:00 to 12:00 starts exactly when
+Mina's 10:00 to 11:00 booking ends, so the two only touch and do not overlap.
 
 ## Running the project
 
 The API is built on JDK 21. To start it, run RoomApiApplication in IntelliJ or `./gradlew bootRun`.  
 The application starts on http://localhost:8080  
-api.http requests' expected results will only hold true on fresh data, so reset before testing. You reset the values by running reset.sql
+api.http requests' expected results will only hold true on fresh data, so reset before testing. You reset the values by
+running reset.sql
 
 Documentation:
+
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - Raw OpenAPI JSON: http://localhost:8080/v3/api-docs
 
