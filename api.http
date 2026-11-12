@@ -89,3 +89,18 @@ GET http://localhost:8080/api/rooms/99
 
 ### 35. DELETE room 1 (expect 409, ApiError body: room 1 has reservations)
 DELETE http://localhost:8080/api/rooms/1
+
+### GET a URL that does not exist (expect 404, not 500)
+GET http://localhost:8080/api/nothing
+
+### GET reservations without reservedBy (expect 400, required parameter)
+GET http://localhost:8080/api/reservations
+
+### POST room with capacity "ten" (expect 400, not valid JSON)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{ "name": "Lab", "capacity": "ten" }
+
+### GET room with a text id (expect 400, 'id' has the wrong type)
+GET http://localhost:8080/api/rooms/abc
