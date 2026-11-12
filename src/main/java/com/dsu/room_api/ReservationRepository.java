@@ -20,5 +20,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             """)
     List<Reservation> findByReservedByWithRoom(@Param("name") String name);
 
-    int countOverlapping(Long roomId, LocalDateTime startTime, LocalDateTime endTime);
+    @Query("""
+            select count(r) from Reservation r
+            where r.room.id = :roomId
+              and r.startTime < :endTime
+              and r.endTime > :startTime
+            """)
+    long countOverlapping(@Param("roomId") Long roomId,
+                          @Param("startTime") LocalDateTime startTime,
+                          @Param("endTime") LocalDateTime endTime);
 }
