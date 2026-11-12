@@ -32,6 +32,14 @@ public class ReservationService {
         return reservationRepository.findById(id);
     }
 
+    public boolean delete(Long id) {
+        if (!reservationRepository.existsById(id)) {
+            return false;
+        }
+        reservationRepository.deleteById(id);
+        return true;
+    }
+
     @Transactional
     public Optional<Reservation> create(Long roomId, String reservedBy,
                                         LocalDateTime startTime, LocalDateTime endTime) {
