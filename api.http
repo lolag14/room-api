@@ -1,22 +1,73 @@
+@base = localhost:8080/api/rooms
+
 ### 14. GET room count (expect 200, 3 -- console shows select count(*))
-GET {{base}}/count
+GET http://{{base}}/count
 
 ### 15. Reservations of room 1, ordered by start (expect 200, 3: Mina, Omar, Lucas)
 GET http://localhost:8080/api/rooms/1/reservations
 
-... (16 to 23 stay exactly as you have them) ...
+### 16. Reservations of a room that does not exist (expect 404)
+GET http://localhost:8080/api/rooms/99/reservations
+
+### 17. Book room 1 for Kim, 14 Oct 10-11 (expect 201, Location /api/reservations/6)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-14T10:00:00", "endTime": "2026-10-14T11:00:00" }
+
+### 18. Overlaps Mina's 6 Oct 10-11 booking (expect 409)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-06T10:30:00", "endTime": "2026-10-06T11:30:00" }
+
+### 19. Starts exactly when Mina ends (expect 201, Location /api/reservations/7)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-06T11:00:00", "endTime": "2026-10-06T12:00:00" }
+
+### 20. End before start (expect 400)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-14T11:00:00", "endTime": "2026-10-14T10:00:00" }
+
+### 21. Room does not exist (expect 404)
+POST http://localhost:8080/api/rooms/99/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-14T10:00:00", "endTime": "2026-10-14T11:00:00" }
+
+### 22. Mina's reservations (expect 200, 2 items, one select in the console)
+GET http://localhost:8080/api/reservations?reservedBy=Mina
 
 ### 23. Delete a room that has reservations (expect 409)
 DELETE http://localhost:8080/api/rooms/1
 
 ### 24. DELETE a room that has reservations, via {{base}} (expect 409)
-DELETE {{base}}/1
+DELETE http://{{base}}/1
 
 ### 25. PUT with capacity above the allowed range (expect 400)
-PUT {{base}}/1
+PUT http://{{base}}/1
 Content-Type: application/json
 
 { "name": "A room too big", "capacity": 21 }
 
 ### 26. DELETE room 4 again (expect 404)
-DELETE {{base}}/4
+DELETE http://{{base}}/4
+
+### 27. GET reservation 6, created by request 17 (expect 200, Kim, room 1)
+GET http://localhost:8080/api/reservations/6
+
+### 28. GET a reservation that does not exist (expect 404)
+GET http://localhost:8080/api/reservations/999
+
+### 29. DELETE reservation 6 (expect 204)
+DELETE http://localhost:8080/api/reservations/6
+
+### 30. DELETE reservation 6 again (expect 404)
+DELETE http://localhost:8080/api/reservations/6
+
+### 31. GET reservation 6 after delete (expect 404)
+GET http://localhost:8080/api/reservations/6
