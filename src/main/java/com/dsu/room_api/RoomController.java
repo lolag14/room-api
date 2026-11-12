@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @Tag(name = "Rooms", description = "Room listings")
 @RestController
@@ -22,32 +21,34 @@ public class RoomController {
     @Operation(summary = "Finds all rooms with an optional minimum capacity and/or name filter")
     @ApiResponse(responseCode = "200", description = "Rooms listed")
     @GetMapping
-    public List<Room> getAllRooms(
+    public List<RoomResponse> getAllRooms(
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(defaultValue = "") String keyword) {
 
-        return roomService.search(minCapacity, keyword);
+        return roomService.search(minCapacity, keyword).stream()
+                .map(RoomResponse::from)
+                .toList();
     }
 
     @Operation(summary = "Finds a room by id")
     @ApiResponse(responseCode = "200", description = "Room found")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @GetMapping("/{id}")
-    public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
-        Optional<Room> foundRoom;
-        foundRoom = roomService.findById(id);
-        return foundRoom.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long id) {
+        return roomService.findById(id)
+                .map(r -> ResponseEntity.ok(RoomResponse.from(r)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Creates a room with provided data and assigns it an id")
     @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
     @ApiResponse(responseCode = "201", description = "Room created, location header points to it")
     @PostMapping
-    public ResponseEntity<Room> createRoom(@RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomCreateRequest request) {
         Room newRoom = roomService.create(request);
         return ResponseEntity
                 .created(URI.create("/api/rooms/" + newRoom.getId()))
-                .body(newRoom);
+                .body(RoomResponse.from(newRoom));
     }
 
     @Operation(summary = "Updates an existing room by id with provided data")
@@ -55,9 +56,10 @@ public class RoomController {
     @ApiResponse(responseCode = "400", description = "Capacity must be between 1 and 20")
     @ApiResponse(responseCode = "404", description = "Room not found")
     @PutMapping("/{id}")
-    public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
-        Optional<Room> updatedRoom = roomService.update(id, request);
-        return updatedRoom.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<RoomResponse> updateRoom(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
+        return roomService.update(id, request)
+                .map(r -> ResponseEntity.ok(RoomResponse.from(r)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Deletes a room by id")
