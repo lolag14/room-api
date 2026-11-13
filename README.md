@@ -20,10 +20,6 @@ ignoring case).
 | GET    | /api/reservations/{id}              | 200, or 404 if missing                                                                                                  | Finds a specific reservation                                                        |
 | DELETE | /api/reservations/{id}              | 204, or 404 if missing                                                                                                  | Cancels a reservation                                                               |
 
-Reservation endpoints return a `ReservationResponse` (id, roomId, roomName, reservedBy, startTime, endTime), never the
-`Reservation` entity. A booking request body contains only reservedBy, startTime and endTime, because the room comes
-from the path.
-
 A room has an id, a name and a capacity. The capacity must be between 1 and 20. POST or PUT request bodies contain only
 a name and a capacity because the server assigns the id.  
 The API starts with these three rooms:
@@ -36,29 +32,46 @@ The API starts with these three rooms:
 
 ## 409 Conflict
 
-There are two 409 cases, and each is decided in a different place.
+The service layer catches the database's foreign-key error and throws `ConflictException` (mapped to 409).
+It is the right layer because the repository should not know about HTTP and the controller should not know about SQL
+errors.
 
-**Deleting a room that has reservations.** The service layer catches the database's foreign-key error and throws
-`RoomHasReservationsException` (mapped to 409). The database is the judge here, because the foreign key already enforces
-the rule. The service is the right layer because the repository should not know about HTTP and the controller should not
-know about SQL errors.
+## Errors
 
-**Booking a room at a time that is taken.** `ReservationService.create` counts the reservations of that room that overlap
-the requested time. If the count is above 0 it throws `ConflictException`, and `ReservationController` turns that into
-409. The service checks first here because the rule is about the data, not a constraint the foreign key can express.
+Every error response has the same `ApiError` body.
 
-The service checks in this order: 400 for a bad request, then 404 for a missing room, then 409 for an overlap.
+| Field       | Meaning                                                      |
+|-------------|--------------------------------------------------------------|
+| status      | The HTTP status code                                         |
+| error       | The reason phrase, such as `Bad Request`                     |
+| message     | What went wrong                                              |
+| path        | The URL that was requested                                   |
+| fieldErrors | A `{ field, message }` for each invalid field, otherwise empty |
+
+Example (api.http request 29, `POST /api/rooms` with capacity 0):
+
+```json
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "request has invalid fields",
+  "path": "/api/rooms",
+  "fieldErrors": [
+    { "field": "capacity", "message": "capacity must be between 1 and 20" }
+  ]
+}
+```
+
+| Status | Meaning                                              |
+|--------|------------------------------------------------------|
+| 400    | The request itself is wrong: an invalid field, a start that is not before the end, a body that is not valid JSON, a wrong type in the path or a missing parameter |
+| 404    | The room, the reservation or the URL does not exist  |
+| 409    | The request is valid but clashes with existing data: the room is already booked at that time, or the room still has reservations |
+| 500    | A bug on the server. The body only says `unexpected server error` and the details go to the log |
 
 ## PUT SQL (api.http request 8)
 
 ```text
-Hibernate:
-select
-    count(*)
-from
-    room r1_0
-where
-    r1_0.id=?
 Hibernate:
 select
     r1_0.id,
@@ -78,7 +91,7 @@ where
     id=?
 ```
 
-PUT checks whether the room exists (`count(*)`), loads it (`select`) and then updates it (`update`).
+PUT loads the room (`select`), changes it, and Hibernate writes the `update` when the transaction commits (dirty checking).
 
 ## Database setup
 

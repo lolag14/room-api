@@ -1,12 +1,12 @@
 @base = localhost:8080/api/rooms
 
 ### 14. GET room count (expect 200, 3 -- console shows select count(*))
-GET http://{{base}}/count
+GET http://localhost:8080/api/rooms/count
 
 ### 15. Reservations of room 1, ordered by start (expect 200, 3: Mina, Omar, Lucas)
 GET http://localhost:8080/api/rooms/1/reservations
 
-### 16. Reservations of a room that does not exist (expect 404)
+### 16. Reservations of a room that does not exist (expect 404, ApiError: room 99 not found)
 GET http://localhost:8080/api/rooms/99/reservations
 
 ### 17. Book room 1 for Kim, 14 Oct 10-11 (expect 201, Location /api/reservations/6)
@@ -15,7 +15,7 @@ Content-Type: application/json
 
 { "reservedBy": "Kim", "startTime": "2026-10-14T10:00:00", "endTime": "2026-10-14T11:00:00" }
 
-### 18. Overlaps Mina's 6 Oct 10-11 booking (expect 409)
+### 18. Overlaps Mina's 6 Oct 10-11 booking (expect 409, ApiError)
 POST http://localhost:8080/api/rooms/1/reservations
 Content-Type: application/json
 
@@ -27,13 +27,13 @@ Content-Type: application/json
 
 { "reservedBy": "Kim", "startTime": "2026-10-06T11:00:00", "endTime": "2026-10-06T12:00:00" }
 
-### 20. End before start (expect 400)
+### 20. End before start (expect 400, ApiError)
 POST http://localhost:8080/api/rooms/1/reservations
 Content-Type: application/json
 
 { "reservedBy": "Kim", "startTime": "2026-10-14T11:00:00", "endTime": "2026-10-14T10:00:00" }
 
-### 21. Room does not exist (expect 404)
+### 21. Room does not exist (expect 404, ApiError)
 POST http://localhost:8080/api/rooms/99/reservations
 Content-Type: application/json
 
@@ -42,65 +42,101 @@ Content-Type: application/json
 ### 22. Mina's reservations (expect 200, 2 items, one select in the console)
 GET http://localhost:8080/api/reservations?reservedBy=Mina
 
-### 23. Delete a room that has reservations (expect 409)
+### 23. Delete a room that has reservations (expect 409, ApiError)
 DELETE http://localhost:8080/api/rooms/1
 
-### 24. DELETE a room that has reservations, via {{base}} (expect 409)
-DELETE http://{{base}}/1
-
-### 25. PUT with capacity above the allowed range (expect 400)
-PUT http://{{base}}/1
-Content-Type: application/json
-
-{ "name": "A room too big", "capacity": 21 }
-
-### 26. DELETE room 4 again (expect 404)
-DELETE http://{{base}}/4
-
-### 27. GET reservation 6, created by request 17 (expect 200, Kim, room 1)
+### 24. GET reservation 6, created by request 17 (expect 200, Kim, room 1)
 GET http://localhost:8080/api/reservations/6
 
-### 28. GET a reservation that does not exist (expect 404)
-GET http://localhost:8080/api/reservations/999
-
-### 29. DELETE reservation 6 (expect 204)
+### 25. DELETE reservation 6 (expect 204)
 DELETE http://localhost:8080/api/reservations/6
 
-### 30. DELETE reservation 6 again (expect 404)
-DELETE http://localhost:8080/api/reservations/6
-
-### 31. GET reservation 6 after delete (expect 404)
-GET http://localhost:8080/api/reservations/6
-
-### 32. PUT room 2, same values (expect 200, console: one select, no update)
+### 26. PUT room 2, same values (expect 200, console: one select, no update)
 PUT http://localhost:8080/api/rooms/2
 Content-Type: application/json
 
 { "name": "Study Pod", "capacity": 4 }
 
-### 33. PUT room 2, new values (expect 200, console: select + update)
+### 27. PUT room 2, new values (expect 200, console: select + update)
 PUT http://localhost:8080/api/rooms/2
 Content-Type: application/json
 
 { "name": "Study Pod XL", "capacity": 6 }
 
-### 34. GET room 99 (expect 404, ApiError body: room 99 not found)
+### 28. POST room, blank name (expect 400, fieldErrors: name)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{ "name": "", "capacity": 5 }
+
+### 29. POST room, capacity 0 (expect 400, fieldErrors: capacity)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{ "name": "Closet", "capacity": 0 }
+
+### 30. POST room, blank name and capacity 50 (expect 400, two fieldErrors)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{ "name": "", "capacity": 50 }
+
+### 31. GET room 99 (expect 404, room 99 not found)
 GET http://localhost:8080/api/rooms/99
 
-### 35. DELETE room 1 (expect 409, ApiError body: room 1 has reservations)
+### 32. DELETE room 1 (expect 409, room 1 has reservations)
 DELETE http://localhost:8080/api/rooms/1
 
-### GET a URL that does not exist (expect 404, not 500)
+### 33. GET a URL that does not exist (expect 404, not 500)
 GET http://localhost:8080/api/nothing
 
-### GET reservations without reservedBy (expect 400, required parameter)
+### 34. POST reservation, blank reservedBy (expect 400, fieldErrors: reservedBy)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "", "startTime": "2026-10-14T10:00:00", "endTime": "2026-10-14T11:00:00" }
+
+### 35. POST reservation, no endTime (expect 400, fieldErrors: endTime)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-14T10:00:00" }
+
+### 36. POST reservation, end before start (expect 400, startTime must be before endTime)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-14T11:00:00", "endTime": "2026-10-14T10:00:00" }
+
+### 37. POST reservation over Mina's 10:00-11:00 (expect 409, already booked)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "Kim", "startTime": "2026-10-06T10:30:00", "endTime": "2026-10-06T11:30:00" }
+
+### 38. GET reservation 99 (expect 404, reservation 99 not found)
+GET http://localhost:8080/api/reservations/99
+
+### 39. GET reservations without reservedBy (expect 400, required parameter)
 GET http://localhost:8080/api/reservations
 
-### POST room with capacity "ten" (expect 400, not valid JSON)
+### 40. POST room, capacity "ten" (expect 400, request body is not valid JSON)
 POST http://localhost:8080/api/rooms
 Content-Type: application/json
 
 { "name": "Lab", "capacity": "ten" }
 
-### GET room with a text id (expect 400, 'id' has the wrong type)
+### 41. GET room with a text id (expect 400, 'id' has the wrong type)
 GET http://localhost:8080/api/rooms/abc
+
+### 42. Own case: PUT a room that does not exist (expect 404, room 99 not found)
+PUT http://localhost:8080/api/rooms/99
+Content-Type: application/json
+
+{ "name": "Ghost Room", "capacity": 5 }
+
+### 43. Own case: reservedBy longer than 50 characters (expect 400, fieldErrors: reservedBy)
+POST http://localhost:8080/api/rooms/1/reservations
+Content-Type: application/json
+
+{ "reservedBy": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "startTime": "2026-10-20T10:00:00", "endTime": "2026-10-20T11:00:00" }
