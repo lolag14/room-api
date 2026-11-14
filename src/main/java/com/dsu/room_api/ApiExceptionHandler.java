@@ -14,6 +14,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
@@ -88,5 +91,15 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(status)
                 .body(ApiError.of(status, message,
                         request.getRequestURI(), fieldErrors));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> unauthorized(
+            AuthenticationException e, HttpServletRequest request) {
+        String message = "login required";
+        if (e instanceof BadCredentialsException) {
+            message = "wrong username or password";
+        }
+        return respond(HttpStatus.UNAUTHORIZED, message, request, List.of());
     }
 }
