@@ -2,6 +2,7 @@ USE roomdb;
 
 DROP TABLE IF EXISTS reservation;
 DROP TABLE IF EXISTS room;
+DROP TABLE IF EXISTS app_user;
 
 CREATE TABLE room
 (
@@ -38,3 +39,20 @@ INSERT INTO reservation (room_id, reserved_by, start_time, end_time)
 VALUES (1, 'Lucas', '2026-10-07 10:00:00', '2026-10-07 12:00:00');
 INSERT INTO reservation (room_id, reserved_by, start_time, end_time)
 VALUES (2, 'Aiko', '2026-10-07 14:00:00', '2026-10-07 15:00:00');
+
+CREATE TABLE app_user
+(
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username      VARCHAR(20)  NOT NULL,
+    password_hash VARCHAR(100) NOT NULL,
+    role          VARCHAR(20)  NOT NULL,
+    CONSTRAINT uq_app_user_username UNIQUE (username)
+);
+
+-- passwords: mina / mina1234, omar / omar1234, admin / admin1234 (stored only as BCrypt hashes)
+INSERT INTO app_user (username, password_hash, role)
+VALUES ('mina', '$2a$10$ix/.xals1cT5fBy84xYGd./rBgU.YjsOFZ0hS649iIxeUqTiiOLzK', 'USER');
+INSERT INTO app_user (username, password_hash, role)
+VALUES ('omar', '$2a$10$Ml7SiYHdlRGXsSYybAHNb.KugPWQAvtKjxyf9cLS6N/qiqpaMh.ly', 'USER');
+INSERT INTO app_user (username, password_hash, role)
+VALUES ('admin', '$2a$10$JWnrfT9oVia.BoC5X2Cz/.Or9LPMSz3Lb8jE/XKI.BdfJakaNMRtW', 'ADMIN');
