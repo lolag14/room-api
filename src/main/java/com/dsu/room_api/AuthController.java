@@ -27,6 +27,11 @@ public class AuthController {
                 authService.signup(request.username(), request.password()));
     }
 
+    @PostMapping("/login")
+    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request.username(), request.password());
+    }
+
     @GetMapping("/me")
     public MeResponse me(Authentication authentication) {
         return new MeResponse(authentication.getName(),
