@@ -14,6 +14,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
+import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
@@ -99,6 +100,8 @@ public class ApiExceptionHandler {
         String message = "login required";
         if (e instanceof BadCredentialsException) {
             message = "wrong username or password";
+        } else if (e instanceof InvalidBearerTokenException) {
+            message = "token is invalid or expired";
         }
         return respond(HttpStatus.UNAUTHORIZED, message, request, List.of());
     }
