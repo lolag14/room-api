@@ -69,6 +69,21 @@ Example (api.http request 29, `POST /api/rooms` with capacity 0):
 | 409    | The request is valid but clashes with existing data: the room is already booked at that time, or the room still has reservations |
 | 500    | A bug on the server. The body only says `unexpected server error` and the details go to the log |
 
+## Authentication
+
+Reading rooms and the reservations of a room (`GET`) is public, and so are `POST /api/auth/signup` and
+`POST /api/auth/login`. Everything else needs a login: writes, `GET /api/reservations/**` and `GET /api/auth/me`.
+
+Log in with `POST /api/auth/login` and `{ "username": "mina", "password": "mina1234" }`. The response contains an
+`accessToken`, which is valid for 30 minutes. Send it as `Authorization: Bearer <accessToken>`. HTTP Basic also works.
+A 401 has the `ApiError` body, with the message `login required`, `wrong username or password` or
+`token is invalid or expired`.
+
+The signing secret is read from the `JWT_SECRET` environment variable, with a development-only default.
+
+Sample accounts (created by `reset.sql`): `mina` / `mina1234`, `omar` / `omar1234` (both USER) and
+`admin` / `admin1234` (ADMIN).
+
 ## PUT SQL (api.http request 8)
 
 ```text
