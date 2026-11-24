@@ -60,4 +60,12 @@ public class ReservationController {
         return a.getAuthorities().stream()
                 .anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN"));
     }
+
+    @PutMapping("/reservations/{id}")
+    public ReservationResponse update(@PathVariable Long id,
+                                      @Valid @RequestBody ReservationCreateRequest request,
+                                      Authentication authentication) {
+        return ReservationResponse.from(reservationService.update(
+                id, authentication.getName(), request.startTime(), request.endTime()));
+    }
 }
