@@ -10,10 +10,14 @@ import java.util.List;
 public class ReservationService {
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
+    private final AppUserRepository userRepository;
 
-    public ReservationService(RoomRepository roomRepository, ReservationRepository reservationRepository) {
+    public ReservationService(RoomRepository roomRepository,
+                              ReservationRepository reservationRepository,
+                              AppUserRepository userRepository) {
         this.roomRepository = roomRepository;
         this.reservationRepository = reservationRepository;
+        this.userRepository = userRepository;
     }
 
     public List<Reservation> findByRoom(Long roomId) {
@@ -23,17 +27,20 @@ public class ReservationService {
         return reservationRepository.findByRoomIdOrderByStartTime(roomId);
     }
 
-    public List<Reservation> findByReservedBy(String reservedBy) {
-        return reservationRepository.findByReservedByWithRoom(reservedBy);
+    public List<Reservation> findMine(String username) {
+        return reservationRepository.findMine(username);
     }
 
-    public Reservation get(Long id) {
-        return reservationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("reservation " + id + " not found"));
+    // 404 first, then 403: the owner or an admin may read
+    @Transactional(readOnly = true)
+    public Reservation get(Long id, String username, boolean admin) {
+        Reservation r = find(id);
+        requireOwnerOrAdmin(r, id, username, admin);
+        return r;
     }
 
     @Transactional
-    public Reservation create(Long roomId, String reservedBy,
+    public Reservation create(Long roomId, String username,
                               LocalDateTime startTime, LocalDateTime endTime) {
         if (!startTime.isBefore(endTime)) {
             throw new IllegalArgumentException("startTime must be before endTime");   // 400
@@ -47,14 +54,29 @@ public class ReservationService {
                     "room " + roomId + " is already booked at that time");   // 409
         }
 
+        AppUser owner = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("user " + username + " not found"));
+
         return reservationRepository.save(
-                new Reservation(room, reservedBy, startTime, endTime));
+                new Reservation(room, owner, startTime, endTime));
     }
 
-    public void delete(Long id) {
-        if (!reservationRepository.existsById(id)) {
-            throw new NotFoundException("reservation " + id + " not found");
+    // the owner or an admin may cancel
+    @Transactional
+    public void delete(Long id, String username, boolean admin) {
+        Reservation r = find(id);                         // 404 first
+        requireOwnerOrAdmin(r, id, username, admin);      // then 403
+        reservationRepository.delete(r);
+    }
+
+    private Reservation find(Long id) {
+        return reservationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("reservation " + id + " not found"));
+    }
+
+    private void requireOwnerOrAdmin(Reservation r, Long id, String username, boolean admin) {
+        if (!admin && !r.isOwnedBy(username)) {
+            throw new ForbiddenException("reservation " + id + " belongs to another user");
         }
-        reservationRepository.deleteById(id);
     }
 }
