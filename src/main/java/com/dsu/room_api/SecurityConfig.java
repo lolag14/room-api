@@ -33,7 +33,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           ApiAuthenticationEntryPoint entryPoint) throws Exception {
+                                           ApiAuthenticationEntryPoint entryPoint,
+                                           ApiAccessDeniedHandler deniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -49,8 +50,11 @@ public class SecurityConfig {
                 .httpBasic(b -> b.authenticationEntryPoint(entryPoint))
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint(entryPoint)
+                        .accessDeniedHandler(deniedHandler)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-                .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint));
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(entryPoint)
+                        .accessDeniedHandler(deniedHandler));
         return http.build();
     }
 }

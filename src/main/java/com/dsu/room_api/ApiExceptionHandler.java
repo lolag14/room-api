@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -105,4 +106,21 @@ public class ApiExceptionHandler {
         }
         return respond(HttpStatus.UNAUTHORIZED, message, request, List.of());
     }
+
+    // rule C: thrown by a service
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> forbidden(
+            ForbiddenException e, HttpServletRequest request) {
+        return respond(HttpStatus.FORBIDDEN,
+                e.getMessage(), request, List.of());
+    }
+
+    // rule D: thrown by a URL rule in SecurityConfig
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> accessDenied(
+            AccessDeniedException e, HttpServletRequest request) {
+        return respond(HttpStatus.FORBIDDEN,
+                "admin role required", request, List.of());
+    }
+
 }
