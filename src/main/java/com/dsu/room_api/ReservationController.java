@@ -3,6 +3,7 @@ package com.dsu.room_api;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -17,9 +18,9 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
-    @GetMapping("/reservations")
-    public List<ReservationResponse> search(@RequestParam String reservedBy) {
-        return reservationService.findByReservedBy(reservedBy).stream()
+    @GetMapping("/reservations/mine")
+    public List<ReservationResponse> mine(Authentication authentication) {
+        return reservationService.findMine(authentication.getName()).stream()
                 .map(ReservationResponse::from)
                 .toList();
     }
@@ -34,8 +35,9 @@ public class ReservationController {
     @PostMapping("/rooms/{roomId}/reservations")
     public ResponseEntity<ReservationResponse> create(
             @PathVariable Long roomId,
-            @Valid @RequestBody ReservationCreateRequest request) {
-        Reservation r = reservationService.create(roomId, request.reservedBy(),
+            @Valid @RequestBody ReservationCreateRequest request,
+            Authentication authentication) {
+        Reservation r = reservationService.create(roomId, authentication.getName(),
                 request.startTime(), request.endTime());
         return ResponseEntity
                 .created(URI.create("/api/reservations/" + r.getId()))
@@ -43,13 +45,19 @@ public class ReservationController {
     }
 
     @GetMapping("/reservations/{id}")
-    public ReservationResponse findOne(@PathVariable Long id) {
-        return ReservationResponse.from(reservationService.get(id));
+    public ReservationResponse findOne(@PathVariable Long id, Authentication authentication) {
+        return ReservationResponse.from(
+                reservationService.get(id, authentication.getName(), isAdmin(authentication)));
     }
 
     @DeleteMapping("/reservations/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        reservationService.delete(id);
+    public void delete(@PathVariable Long id, Authentication authentication) {
+        reservationService.delete(id, authentication.getName(), isAdmin(authentication));
+    }
+
+    private static boolean isAdmin(Authentication a) {
+        return a.getAuthorities().stream()
+                .anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN"));
     }
 }
