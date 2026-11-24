@@ -9,16 +9,16 @@ import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     List<Reservation> findByRoomIdOrderByStartTime(Long roomId);
-    List<Reservation> findByReservedByOrderByStartTime(String reservedBy);
     boolean existsByRoomId(Long roomId);
 
     @Query("""
             select r from Reservation r
             join fetch r.room
-            where r.reservedBy = :name
+            join fetch r.owner
+            where r.owner.username = :username
             order by r.startTime
             """)
-    List<Reservation> findByReservedByWithRoom(@Param("name") String name);
+    List<Reservation> findMine(@Param("username") String username);
 
     @Query("""
             select count(r) from Reservation r

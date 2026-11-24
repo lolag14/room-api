@@ -20,21 +20,28 @@ public class Reservation {
     @JoinColumn(name = "room_id")
     private Room room;
 
-    private String reservedBy;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id")
+    private AppUser owner;
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
     protected Reservation() { }
-    public Reservation(Room room, String reservedBy, LocalDateTime startTime, LocalDateTime endTime) {
+    public Reservation(Room room, AppUser owner, LocalDateTime startTime, LocalDateTime endTime) {
         this.room = room;
-        this.reservedBy = reservedBy;
+        this.owner = owner;
         this.startTime = startTime;
         this.endTime = endTime;
     }
 
+    public boolean isOwnedBy(String username) {
+        return owner.getUsername().equals(username);
+    }
+
     public Long getId() { return id; }
     public Room getRoom() { return room; }
-    public String getReservedBy() { return reservedBy; }
+    public AppUser getOwner() { return owner; }
     public LocalDateTime getStartTime() { return startTime; }
     public LocalDateTime getEndTime() { return endTime; }
 }
