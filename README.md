@@ -179,6 +179,16 @@ Two reservations of one room overlap when `new.start < old.end AND new.end > old
 Request 19 succeeds because the comparisons are strict (`<` and `>`): a booking from 11:00 to 12:00 starts exactly when
 Mina's 10:00 to 11:00 booking ends, so the two only touch and do not overlap.
 
+## Tests
+
+Run `./gradlew test` (`gradlew.bat test` on Windows). MySQL must be running and `reset.sql` must be run first, because
+the API tests expect its data (for example, mina owns reservation 1).
+
+- `ReservationServiceTest` tests the service rules with Mockito. It needs no database.
+- `ApiFailureTest` calls the whole API with MockMvc and checks the status and message of each failure (401, 403, 400, 409). Each test is rolled back, so the data stays as `reset.sql` left it.
+
+A screenshot of a green run is in `tests-passed.png`.
+
 ## Running the project
 
 The API is built on JDK 21. To start it, run RoomApiApplication in IntelliJ or `./gradlew bootRun`.  
