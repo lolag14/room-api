@@ -50,5 +50,11 @@ public class RoomService {
         } catch (DataIntegrityViolationException e) {
             throw new ConflictException("room " + id + " has reservations");
         }
+        try {
+            roomRepository.deleteById(id);
+            roomRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("room " + id + " has reservations");
+        }
     }
 }
