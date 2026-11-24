@@ -65,4 +65,59 @@ class ReservationServiceTest {
                 () -> service.delete(1L, "omar", false));
         verify(reservationRepository, never()).delete(any());
     }
+
+    @Test
+    void createSavesWithTheLoggedInOwner() {
+        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
+        when(reservationRepository.countOverlapping(eq(1L), any(), any())).thenReturn(0L);
+        when(userRepository.findByUsername("mina")).thenReturn(Optional.of(mina));
+        when(reservationRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        Reservation saved = service.create(1L, "mina", ten, eleven);
+
+        assertSame(mina, saved.getOwner());
+        assertEquals("mina", saved.getOwner().getUsername());
+    }
+
+    @Test
+    void ownerMayDelete() {
+        Reservation minas = new Reservation(room, mina, ten, eleven);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(minas));
+
+        service.delete(1L, "mina", false);
+
+        verify(reservationRepository).delete(minas);
+    }
+
+    @Test
+    void adminMayDeleteAnotherUsersReservation() {
+        Reservation minas = new Reservation(room, mina, ten, eleven);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(minas));
+
+        service.delete(1L, "admin", true);
+
+        verify(reservationRepository).delete(minas);
+    }
+
+    @Test
+    void adminMayNotReschedule() {                              // Lab G: owner only
+        Reservation minas = new Reservation(room, mina, ten, eleven);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(minas));
+
+        assertThrows(ForbiddenException.class,
+                () -> service.update(1L, "admin", ten, eleven));
+        verify(reservationRepository, never())
+                .countOverlappingExcept(any(), any(), any(), any());
+    }
+
+    @Test
+    void rescheduleOntoBusyTimeIsConflict() {
+        Reservation minas = new Reservation(room, mina, ten, eleven);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(minas));
+        when(reservationRepository.countOverlappingExcept(eq(1L), eq(1L), any(), any()))
+                .thenReturn(1L);
+
+        assertThrows(ConflictException.class,
+                () -> service.update(1L, "mina", ten, eleven));
+    }
 }
