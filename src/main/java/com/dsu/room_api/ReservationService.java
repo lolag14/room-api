@@ -69,6 +69,34 @@ public class ReservationService {
         reservationRepository.delete(r);
     }
 
+    // owner only: not even an admin may move someone's booking
+    @Transactional
+    public Reservation update(Long id, String username,
+                              LocalDateTime startTime, LocalDateTime endTime) {
+        if (!startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("startTime must be before endTime");   // 400
+        }
+
+        Reservation r = find(id);                                                      // 404
+
+        requireOwner(r, id, username);                                                 // 403
+
+        if (reservationRepository.countOverlappingExcept(
+                r.getRoom().getId(), id, startTime, endTime) > 0) {
+            throw new ConflictException(
+                    "room " + r.getRoom().getId() + " is already booked at that time");   // 409
+        }
+
+        r.reschedule(startTime, endTime);   // no save(): dirty checking writes the update
+        return r;
+    }
+
+    private void requireOwner(Reservation r, Long id, String username) {
+        if (!r.isOwnedBy(username)) {
+            throw new ForbiddenException("reservation " + id + " belongs to another user");
+        }
+    }
+
     private Reservation find(Long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("reservation " + id + " not found"));

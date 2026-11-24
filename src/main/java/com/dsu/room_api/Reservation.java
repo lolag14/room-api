@@ -39,6 +39,11 @@ public class Reservation {
         return owner.getUsername().equals(username);
     }
 
+    public void reschedule(LocalDateTime startTime, LocalDateTime endTime) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
     public Long getId() { return id; }
     public Room getRoom() { return room; }
     public AppUser getOwner() { return owner; }
